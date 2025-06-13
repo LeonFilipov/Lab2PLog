@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head lang="en">
+    <!-- disable cache for debugging -->
+    <meta http-equiv="cache-control" content="no-cache"/>
+    <meta http-equiv="expires" content="0"/>
+    <meta http-equiv="pragma" content="no-cache"/>
+    <!-- end: disable cache for debugging -->
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico"/>  <!-- relative to 'static' dir -->
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet">
+    <link rel="stylesheet" href="ceritolog.css"/>
+    <script src="ceritolog.js" defer="defer"></script>
+
+    <title>CeritoLog</title>
+  </head>
+
+  <body onload="renderPage();">
+    <noscript><h1>You need to enable JavaScript to run this app!!!</h1></noscript>
+    <form id="query_form" style="padding: 20px;">
+      <h1>CeritoLog</h1>
+      <label>Tamaño:</label> <input type="text" id="size_txt" size="10" value="4"/><br/>
+      <label>Jugador 1:</label> <input type="radio" name="j1_radio" id="j1_h" value="h" checked="true"/>Humano <input type="radio" name="j1_radio" id="j1_m" value="m"/>Máquina -
+      <label>Nivel minimax:</label> <input type="text" id="min1_txt" size="5" value="3"/><br/>
+      <label>Jugador 2:</label> <input type="radio" name="j2_radio" id="j2_h" value="h" checked="true"/>Humano <input type="radio" name="j2_radio" id="j2_m" value="m"/>Máquina -
+      <label>Nivel minimax:</label> <input type="text" id="min2_txt" size="5" value="3"/><br/>
+      <input type="button" id="new_game_btn" value="Juego nuevo"/><br/>
+    </form>
+    <div id="status_div" style="padding: 20px; display: none;">
+      <label>Puntos Jugador 1:</label> <label id="p1_lbl">0</label><br/>
+      <label>Puntos Jugador 2:</label> <label id="p2_lbl">0</label><br/>
+      <label>Turno: Jugador</label> <label id="turno_lbl">1</label><br/>
+      <input type="button" id="suggestion_btn" value="Sugerir jugada"/> <label id="sugerencia_lbl"></label><br/>
+    </div>
+    <div style="padding: 20px;">
+        <div class="game" id="game_div"></div>
+    </div>
+  </body>
+</html>
