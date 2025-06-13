@@ -33,46 +33,66 @@ sugerencia_jugada/6 % sugerencia_jugada(+Tablero,+Turno,+Nivel,?F,?C,?D)
 % jugada_maquina(+Tablero, +Turno, +Nivel, ?F, ?C, ?D, ?Tablero2, ?Turno2, ?Celdas)
 jugada_maquina(Tablero, Turno, Nivel, F, C, D, Tablero2, Turno2, Celdas) :-
     generar_jugadas_validas(Tablero, Jugadas),
-    mejor_jugada_minimax(Jugadas, Tablero, Turno, Nivel, [F, C, D], Valor),
+    mejor_jugada_alphabeta(Jugadas, Tablero, Turno, Nivel, -10000, 10000, [F, C, D], _Valor),
     jugada_humano(Tablero, Turno, F, C, D, Tablero2, Turno2, Celdas).
 
-% mejor_jugada_minimax(+Jugadas, +Tablero, +Turno, +Nivel, -MejorJugada, -MejorValor)
-mejor_jugada_minimax([Jugada], Tablero, Turno, Nivel, Jugada, Valor) :-
+% mejor_jugada_alphabeta(+Jugadas, +Tablero, +Turno, +Nivel, +Alpha, +Beta, -MejorJugada, -MejorValor)
+mejor_jugada_alphabeta([Jugada], Tablero, Turno, Nivel, Alpha, Beta, Jugada, Valor) :-
     Jugada = [F, C, D],
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    minimax(Tab1, Turno1, Nivel, Turno, Valor).
+    alphabeta(Tab1, Turno1, Nivel, Turno, Alpha, Beta, Valor),
+    !.
 
-mejor_jugada_minimax([J1 | Resto], Tablero, Turno, Nivel, MejorJugada, MejorValor) :-
+mejor_jugada_alphabeta([J1 | Resto], Tablero, Turno, Nivel, Alpha, Beta, MejorJugada, MejorValor) :-
     J1 = [F, C, D],
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    minimax(Tab1, Turno1, Nivel, Turno, Valor1),
-    mejor_jugada_minimax(Resto, Tablero, Turno, Nivel, J2, Valor2),
+    alphabeta(Tab1, Turno1, Nivel, Turno, Alpha, Beta, Valor1),
+    mejor_jugada_alphabeta(Resto, Tablero, Turno, Nivel, Alpha, Beta, J2, Valor2),
     ( Valor1 >= Valor2 ->
         (MejorJugada = J1, MejorValor = Valor1)
     ;   (MejorJugada = J2, MejorValor = Valor2)
     ).
 
-
-% minimax(+Tablero, +TurnoActual, +Nivel, +JugadorEvaluado, -Valor)
-minimax(Tablero, _, 0, JugadorEvaluado, Valor) :-
+% alphabeta(+Tablero, +TurnoActual, +Nivel, +JugadorEvaluado, +Alpha, +Beta, -Valor)
+alphabeta(Tablero, _, 0, JugadorEvaluado, _Alpha, _Beta, Valor) :-
     evaluar_tablero(Tablero, JugadorEvaluado, Valor).
 
-minimax(Tablero, TurnoActual, Nivel, JugadorEvaluado, Valor) :-
+alphabeta(Tablero, TurnoActual, Nivel, JugadorEvaluado, Alpha, Beta, Valor) :-
     Nivel > 0,
     generar_jugadas_validas(Tablero, Jugadas),
     ( Jugadas == [] ->
-        evaluar_tablero(Tablero, JugadorEvaluado, Valor)  % No hay jugadas, evaluar directamente
+        evaluar_tablero(Tablero, JugadorEvaluado, Valor)
     ;
         Nivel1 is Nivel - 1,
-        findall(V, (
-                member([F, C, D], Jugadas),
-                jugada_humano(Tablero, TurnoActual, F, C, D, T1, T2, _),
-                minimax(T1, T2, Nivel1, JugadorEvaluado, V)
-            ),
-            Valores),
-        ( TurnoActual =:= JugadorEvaluado -> max_list(Valores, Valor)
-                                           ; min_list(Valores, Valor)
+        ( TurnoActual =:= JugadorEvaluado ->
+            alphabeta_max(Jugadas, Tablero, TurnoActual, Nivel1, JugadorEvaluado, Alpha, Beta, Valor)
+        ;
+            alphabeta_min(Jugadas, Tablero, TurnoActual, Nivel1, JugadorEvaluado, Alpha, Beta, Valor)
         )
+    ).
+
+% Maximizing player
+alphabeta_max([], _, _, _, _, Alpha, _Beta, Alpha).
+alphabeta_max([[F,C,D]|Resto], Tablero, Turno, Nivel, Jugador, Alpha, Beta, Valor) :-
+    jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
+    alphabeta(Tab1, Turno1, Nivel, Jugador, Alpha, Beta, V1),
+    Alpha1 is max(Alpha, V1),
+    ( Beta =< Alpha1 ->
+        Valor = Alpha1
+    ;
+        alphabeta_max(Resto, Tablero, Turno, Nivel, Jugador, Alpha1, Beta, Valor)
+    ).
+
+% Minimizing player
+alphabeta_min([], _, _, _, _, _Alpha, Beta, Beta).
+alphabeta_min([[F,C,D]|Resto], Tablero, Turno, Nivel, Jugador, Alpha, Beta, Valor) :-
+    jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
+    alphabeta(Tab1, Turno1, Nivel, Jugador, Alpha, Beta, V1),
+    Beta1 is min(Beta, V1),
+    ( Beta1 =< Alpha ->
+        Valor = Beta1
+    ;
+        alphabeta_min(Resto, Tablero, Turno, Nivel, Jugador, Alpha, Beta1, Valor)
     ).
 
 % evaluar_tablero(+Tablero, +Jugador, -Valor)
