@@ -256,4 +256,8 @@ fin_del_juego(Tablero, P1, P2, Ganador) :-
     contar_puntos(Tablero, P1, P2),
     decidir_ganador(P1, P2, Ganador).
 
-sugerencia_jugada(_,_,_,_,_,_):-fail.
+% sugerencia_jugada(+Tablero,+Turno,+Nivel,?F,?C,?D)
+sugerencia_jugada(Tablero, Turno, Nivel, F, C, D) :-
+    generar_jugadas_validas(Tablero, Jugadas),
+    Nivel1 is min(2, Nivel), % Limita la profundidad a 2
+    mejor_jugada_alphabeta(Jugadas, Tablero, Turno, Nivel1, -10000, 10000, [F, C, D], _).
