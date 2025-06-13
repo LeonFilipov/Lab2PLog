@@ -40,13 +40,13 @@ jugada_maquina(Tablero, Turno, Nivel, F, C, D, Tablero2, Turno2, Celdas) :-
 mejor_jugada_alphabeta([Jugada], Tablero, Turno, Nivel, Alpha, Beta, Jugada, Valor) :-
     Jugada = [F, C, D],
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    alphabeta(Tab1, Turno1, Nivel, Turno, Alpha, Beta, Valor),
+    alphabeta([], Tab1, Turno1, Nivel, Turno, Alpha, Beta, Valor),
     !.
 
 mejor_jugada_alphabeta([J1 | Resto], Tablero, Turno, Nivel, Alpha, Beta, MejorJugada, MejorValor) :-
     J1 = [F, C, D],
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    alphabeta(Tab1, Turno1, Nivel, Turno, Alpha, Beta, Valor1),
+    alphabeta(Resto, Tab1, Turno1, Nivel, Turno, Alpha, Beta, Valor1),
     mejor_jugada_alphabeta(Resto, Tablero, Turno, Nivel, Alpha, Beta, J2, Valor2),
     ( Valor1 >= Valor2 ->
         (MejorJugada = J1, MejorValor = Valor1)
@@ -54,20 +54,19 @@ mejor_jugada_alphabeta([J1 | Resto], Tablero, Turno, Nivel, Alpha, Beta, MejorJu
     ).
 
 % alphabeta(+Tablero, +TurnoActual, +Nivel, +JugadorEvaluado, +Alpha, +Beta, -Valor)
-alphabeta(Tablero, _, 0, JugadorEvaluado, _Alpha, _Beta, Valor) :-
+alphabeta(_, Tablero, _, 0, JugadorEvaluado, _Alpha, _Beta, Valor) :-
     evaluar_tablero(Tablero, JugadorEvaluado, Valor).
 
-alphabeta(Tablero, TurnoActual, Nivel, JugadorEvaluado, Alpha, Beta, Valor) :-
+alphabeta(JugadasValidas, Tablero, TurnoActual, Nivel, JugadorEvaluado, Alpha, Beta, Valor) :-
     Nivel > 0,
-    generar_jugadas_validas(Tablero, Jugadas),
-    ( Jugadas == [] ->
+    ( JugadasValidas == [] ->
         evaluar_tablero(Tablero, JugadorEvaluado, Valor)
     ;
         Nivel1 is Nivel - 1,
         ( TurnoActual =:= JugadorEvaluado ->
-            alphabeta_max(Jugadas, Tablero, TurnoActual, Nivel1, JugadorEvaluado, Alpha, Beta, Valor)
+            alphabeta_max(JugadasValidas, Tablero, TurnoActual, Nivel1, JugadorEvaluado, Alpha, Beta, Valor)
         ;
-            alphabeta_min(Jugadas, Tablero, TurnoActual, Nivel1, JugadorEvaluado, Alpha, Beta, Valor)
+            alphabeta_min(JugadasValidas, Tablero, TurnoActual, Nivel1, JugadorEvaluado, Alpha, Beta, Valor)
         )
     ).
 
@@ -75,7 +74,7 @@ alphabeta(Tablero, TurnoActual, Nivel, JugadorEvaluado, Alpha, Beta, Valor) :-
 alphabeta_max([], _, _, _, _, Alpha, _Beta, Alpha).
 alphabeta_max([[F,C,D]|Resto], Tablero, Turno, Nivel, Jugador, Alpha, Beta, Valor) :-
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    alphabeta(Tab1, Turno1, Nivel, Jugador, Alpha, Beta, V1),
+    alphabeta(Resto, Tab1, Turno1, Nivel, Jugador, Alpha, Beta, V1),
     Alpha1 is max(Alpha, V1),
     ( Beta =< Alpha1 ->
         Valor = Alpha1
@@ -87,7 +86,7 @@ alphabeta_max([[F,C,D]|Resto], Tablero, Turno, Nivel, Jugador, Alpha, Beta, Valo
 alphabeta_min([], _, _, _, _, _Alpha, Beta, Beta).
 alphabeta_min([[F,C,D]|Resto], Tablero, Turno, Nivel, Jugador, Alpha, Beta, Valor) :-
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    alphabeta(Tab1, Turno1, Nivel, Jugador, Alpha, Beta, V1),
+    alphabeta(Resto, Tab1, Turno1, Nivel, Jugador, Alpha, Beta, V1),
     Beta1 is min(Beta, V1),
     ( Beta1 =< Alpha ->
         Valor = Beta1
