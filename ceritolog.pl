@@ -34,28 +34,18 @@ sugerencia_jugada/6 % sugerencia_jugada(+Tablero,+Turno,+Nivel,?F,?C,?D)
 jugada_maquina(Tablero, Turno, Nivel, F, C, D, Tablero2, Turno2, Celdas) :-
     generar_jugadas_validas(Tablero, Jugadas),
     mejor_jugada_minimax(Jugadas, Tablero, Turno, Nivel, [F, C, D], Valor),
-    writeln(mejor_jugada=[F, C, D]),
-    writeln(valor_estimado=Valor),
-    jugada_humano(Tablero, Turno, F, C, D, Tablero2, Turno2, Celdas),
-    writeln(celdas_capturadas=Celdas),
-    writeln(nuevo_turno=Turno2).
+    jugada_humano(Tablero, Turno, F, C, D, Tablero2, Turno2, Celdas).
 
 % mejor_jugada_minimax(+Jugadas, +Tablero, +Turno, +Nivel, -MejorJugada, -MejorValor)
 mejor_jugada_minimax([Jugada], Tablero, Turno, Nivel, Jugada, Valor) :-
     Jugada = [F, C, D],
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    writeln('--- jugada humano 2 ---'),
-    writeln(jugada=Jugada),
     minimax(Tab1, Turno1, Nivel, Turno, Valor).
 
 mejor_jugada_minimax([J1 | Resto], Tablero, Turno, Nivel, MejorJugada, MejorValor) :-
     J1 = [F, C, D],
     jugada_humano(Tablero, Turno, F, C, D, Tab1, Turno1, _),
-    writeln('--- jugada humano ---'),
-    writeln(jugada=J1),
     minimax(Tab1, Turno1, Nivel, Turno, Valor1),
-    writeln("Sale minimax: "),
-    writeln(Valor1),
     mejor_jugada_minimax(Resto, Tablero, Turno, Nivel, J2, Valor2),
     ( Valor1 >= Valor2 ->
         (MejorJugada = J1, MejorValor = Valor1)
@@ -65,38 +55,25 @@ mejor_jugada_minimax([J1 | Resto], Tablero, Turno, Nivel, MejorJugada, MejorValo
 
 % minimax(+Tablero, +TurnoActual, +Nivel, +JugadorEvaluado, -Valor)
 minimax(Tablero, _, 0, JugadorEvaluado, Valor) :-
-    writeln("entro minimax 2 nivel:"),
-    evaluar_tablero(Tablero, JugadorEvaluado, Valor),
-    writeln("sale evaluar tablero"),
-    writeln(Valor).
+    evaluar_tablero(Tablero, JugadorEvaluado, Valor).
 
 minimax(Tablero, TurnoActual, Nivel, JugadorEvaluado, Valor) :-
     Nivel > 0,
-    writeln("entro minimax nivel:"),
-    writeln(Nivel),
     generar_jugadas_validas(Tablero, Jugadas),
-    writeln("Jugadas validas minimax: "),
-    writeln(Jugadas),
-    Nivel1 is Nivel - 1,
-    findall(V, (
-            member([F, C, D], Jugadas),
-            jugada_humano(Tablero, TurnoActual, F, C, D, T1, T2, _),
-            minimax(T1, T2, Nivel1, JugadorEvaluado, V)
-        ),
-        Valores),
-    (
-        TurnoActual =:= JugadorEvaluado -> max_list(Valores, Valor)
-    								;	min_list(Valores, Valor)
+    ( Jugadas == [] ->
+        evaluar_tablero(Tablero, JugadorEvaluado, Valor)  % No hay jugadas, evaluar directamente
+    ;
+        Nivel1 is Nivel - 1,
+        findall(V, (
+                member([F, C, D], Jugadas),
+                jugada_humano(Tablero, TurnoActual, F, C, D, T1, T2, _),
+                minimax(T1, T2, Nivel1, JugadorEvaluado, V)
+            ),
+            Valores),
+        ( TurnoActual =:= JugadorEvaluado -> max_list(Valores, Valor)
+                                           ; min_list(Valores, Valor)
+        )
     ).
-
-
-% evaluar_tablero(+Tablero, +Jugador, -Valor)
-evaluar_tablero(Tablero, Jugador, Valor) :-
-    contar_celdas(Tablero, P1, P2),
-    writeln("sale contar puntos: "),
-    writeln(P1),
-    writeln(P2),
-    (Jugador =:= 1 -> Valor is P1 - P2 ; Valor is P2 - P1).
 
 % evaluar_tablero(+Tablero, +Jugador, -Valor)
 evaluar_tablero(Tablero, Jugador, Valor) :-
@@ -116,29 +93,32 @@ generar_jugadas_validas(Tablero, Jugadas) :-
     findall([F,C,h], (
         nth1(F, Tablero, Fila),
         nth1(C, Fila, c(H, _, J)),
-        J =\= -1,
         H == f
     ), Horizontales),
     findall([F,C,v], (
         nth1(F, Tablero, Fila),
         nth1(C, Fila, c(_, V, J)),
-        J =\= -1,
         V == f
     ), Verticales),
     append(Horizontales, Verticales, Jugadas).
 
-% genera una fila con celdas capturables (J=0) y no capturables (J=-1) según la posición
+% genera una fila con celdas capturables y bordes con H y/o V marcados según la posición
 fila_indexada(N, FilaIndex, Fila) :-
     findall(Celda, (
         between(1, N, ColIndex),
-        (FilaIndex < N, ColIndex < N ->
-            Celda = c(f, f, 0)
-        ;
-            Celda = c(f, f, -1)
+        (
+            FilaIndex < N, ColIndex < N ->
+                Celda = c(f, f, 0)
+        ;   FilaIndex < N, ColIndex =:= N ->
+                Celda = c(t, f, -1)
+        ;   FilaIndex =:= N, ColIndex < N ->
+                Celda = c(f, t, -1)
+        ;   FilaIndex =:= N, ColIndex =:= N ->     % esquina inferior derecha
+                Celda = c(t, t, -1)
         )
     ), Fila).
 
-% genera el tablero completo con celdas capturables y no capturables
+% genera el tablero completo con la lógica modificada
 tablero(N, Tablero) :-
     findall(Fila, (
         between(1, N, FilaIndex),
